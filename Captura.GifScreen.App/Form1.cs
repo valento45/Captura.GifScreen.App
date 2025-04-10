@@ -143,6 +143,7 @@ namespace Captura.GifScreen.App
                 if (captureThread.IsAlive)
                 {
                     notifyIcon1.ShowBalloonTip(2000, "Atenção", $"Aguarde finalizar o processamento do GIF anterior para iniciar um novo", ToolTipIcon.Info);
+                    
                     return;
                 }
             }
@@ -231,7 +232,7 @@ namespace Captura.GifScreen.App
                     {
                         using (var img = new MagickImage(framePath))
                         {
-                            img.AnimationDelay = 12; // Tempo de exibição do frame
+                            img.AnimationDelay = 14; // Tempo de exibição do frame
                             img.Quantize(new QuantizeSettings { Colors = 64 }); //Reduz brilho por performance
                             collection.Add(img.Clone());
                         }
