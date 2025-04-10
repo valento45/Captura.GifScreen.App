@@ -50,6 +50,7 @@ namespace Captura.GifScreen.App
             if (!AutoStartHelper.EstaRegistrado(nomeApp))
             {
                 AutoStartHelper.RegistrarAutoInicio(nomeApp, caminho);
+                //AutoStartHelper.CriarTarefaAgendada(caminho);
             }
 
         }
@@ -137,13 +138,22 @@ namespace Captura.GifScreen.App
 
         private void GravarTela()
         {
-
+            if (captureThread != null)
+            {
+                if (captureThread.IsAlive)
+                {
+                    notifyIcon1.ShowBalloonTip(2000, "Atenção", $"Aguarde finalizar o processamento do GIF anterior para iniciar um novo", ToolTipIcon.Info);
+                    return;
+                }
+            }
 
             _gravando = true;
             capturedFrames.Clear();
             int duration = 5000; // Duração da gravação (5 segundos)
             int frameRate = 10;  // 10 FPS
             int interval = 1000 / frameRate;
+
+
 
             notifyIcon1.ShowBalloonTip(2000, "Gravando", $"Gravação iniciada...", ToolTipIcon.Info);
 
@@ -175,17 +185,20 @@ namespace Captura.GifScreen.App
 
             CreateGif();
 
-            
-            
-
         }
         private void CaptureFrame()
         {
 
             Rectangle screenBounds = Screen.PrimaryScreen.Bounds;
 
+            string frame = $"frame_{Guid.NewGuid()}.png";
+             
+            var directoryPath = Path.Combine(ObterPastaCapturas(), "temp");
 
-            string framePath = $"frame_{Guid.NewGuid()}.png";
+            if(!Directory.Exists(directoryPath)) 
+                Directory.CreateDirectory(directoryPath);
+
+            string framePath = Path.Combine(directoryPath, $"frame_{Guid.NewGuid()}.png") ;
 
             //using (Bitmap bitmap = new Bitmap(800, 600))
             using (Bitmap bitmap = new Bitmap(screenBounds.Width, screenBounds.Height))
@@ -200,6 +213,15 @@ namespace Captura.GifScreen.App
 
         private void CreateGif()
         {
+            if (captureThread != null)
+            {
+                if (captureThread.IsAlive)
+                {
+                    notifyIcon1.ShowBalloonTip(2000, "Atenção", $"Aguarde finalizar o processamento do GIF anterior para iniciar um novo", ToolTipIcon.Info);
+                    return;
+                }
+            }
+
 
             captureThread = new Thread(() =>
             {
@@ -267,7 +289,12 @@ namespace Captura.GifScreen.App
             // Cria o menu de contexto com um item "Fechar"
             contextMenu = new ContextMenuStrip();
             var fecharItem = new ToolStripMenuItem("Sair");
-            fecharItem.Click += (s, e) => Application.Exit();
+            fecharItem.Click += (s, e) =>
+            {
+                Application.Exit();
+                Process.GetCurrentProcess().Kill();
+            };
+
             contextMenu.Items.Add(fecharItem);
 
             notifyIcon1.Icon = new Icon(Path.Combine(AppContext.BaseDirectory, "Resources", "icon GifScreen.ico"));
@@ -292,13 +319,13 @@ namespace Captura.GifScreen.App
         private void btSalvar_Click(object sender, EventArgs e)
         {
 
-            if (currentHotkeyGravacao != Keys.None)            
+            if (currentHotkeyGravacao != Keys.None)
                 RegistrarAtalho(currentHotkeyGravacao, HOTKEY_ID_GRAVACAO);
 
 
-            if (currentHotkeyCaptura != Keys.None)            
+            if (currentHotkeyCaptura != Keys.None)
                 RegistrarAtalho(currentHotkeyCaptura, HOTKEY_ID);
-            
+
 
             if (_configuracoesSistema == null)
                 _configuracoesSistema = ConfiguracoesSistema.ObterConfiguracoesDoSistema();

@@ -33,11 +33,16 @@ namespace Captura.GifScreen.App.Model
                 if (!IniciarComSistema)
                 {
                     if (AutoStartHelper.EstaRegistrado(nomeApp))
+                    {
                         AutoStartHelper.RemoverAutoInicio(nomeApp);
+                        //AutoStartHelper.ExcluirTarefaAgendada();
+                    }
                 }
                 else
                 {
-                    AutoStartHelper.RegistrarAutoInicio(nomeApp, caminho);
+                    if (!AutoStartHelper.EstaRegistrado(nomeApp))
+                        AutoStartHelper.RegistrarAutoInicio(nomeApp, caminho);
+                    //AutoStartHelper.CriarTarefaAgendada(caminho);
                 }
 
 
