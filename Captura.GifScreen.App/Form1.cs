@@ -1,7 +1,9 @@
 using Captura.GifScreen.App.Configuration;
 using Captura.GifScreen.App.Model;
 using ImageMagick;
+using System.Diagnostics;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -40,13 +42,6 @@ namespace Captura.GifScreen.App
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-
-
-            // Registra Ctrl + Alt + P como hotkey da captura de tela
-            RegisterHotKey(this.Handle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, Keys.P);
-
-            // Registra Ctrl + Alt + S como hotkey da gravacao
-            RegisterHotKey(this.Handle, HOTKEY_ID_GRAVACAO, MOD_CONTROL | MOD_ALT, Keys.S);
 
 
             string nomeApp = "GifScreenApp";
@@ -88,6 +83,9 @@ namespace Captura.GifScreen.App
             //UnregisterHotKey(this.Handle, HOTKEY_ID);
             //UnregisterHotKey(this.Handle, HOTKEY_ID_GRAVACAO);
             base.OnFormClosing(e);
+
+            e.Cancel = true;
+            this.Hide();
         }
 
 
@@ -112,11 +110,15 @@ namespace Captura.GifScreen.App
 
 
             _configuracoesSistema = configuracao;
+
+            RegistrarAtalho(_configuracoesSistema.TeclasCaptura, HOTKEY_ID);
+            RegistrarAtalho(_configuracoesSistema.TeclasGravacao, HOTKEY_ID_GRAVACAO);
         }
 
 
         private void CapturarTela()
         {
+
             Rectangle bounds = Screen.PrimaryScreen.Bounds;
             using (Bitmap bitmap = new Bitmap(bounds.Width, bounds.Height))
             {
@@ -135,7 +137,7 @@ namespace Captura.GifScreen.App
 
         private void GravarTela()
         {
-            notifyIcon1.BalloonTipClicked -= NotifyIcon1_BalloonTipClicked;
+
 
             _gravando = true;
             capturedFrames.Clear();
@@ -166,12 +168,14 @@ namespace Captura.GifScreen.App
         private void PararGravacao()
         {
             _gravando = false;
-            notifyIcon1.ShowBalloonTip(2000, "Gravação", $"Gravação concluída. Criando GIF...", ToolTipIcon.Info);
 
             captureThread?.Join();
+            notifyIcon1.ShowBalloonTip(2000, "Gravação", $"Gravação concluída. Criando GIF...", ToolTipIcon.Info);
+
+
             CreateGif();
 
-            notifyIcon1.BalloonTipClicked += NotifyIcon1_BalloonTipClicked;
+            
             
 
         }
@@ -214,6 +218,7 @@ namespace Captura.GifScreen.App
 
 
                     collection.Write(caminhoCompleto);
+
 
                     notifyIcon1.ShowBalloonTip(2000, "Gravação", $"GIF salvo em: {ObterPastaCapturas()}", ToolTipIcon.Info);
                 }
@@ -275,6 +280,11 @@ namespace Captura.GifScreen.App
                 this.Show();
                 this.WindowState = FormWindowState.Normal;
             };
+
+
+            notifyIcon1.BalloonTipClicked -= NotifyIcon1_BalloonTipClicked;
+            notifyIcon1.BalloonTipClicked += NotifyIcon1_BalloonTipClicked;
+
         }
 
 
@@ -282,26 +292,13 @@ namespace Captura.GifScreen.App
         private void btSalvar_Click(object sender, EventArgs e)
         {
 
-            UnregisterHotKey(this.Handle, HOTKEY_ID);
-            UnregisterHotKey(this.Handle, HOTKEY_ID_GRAVACAO);
-
-
-            if (currentHotkeyGravacao != Keys.None)
-            {
-                UnregisterHotKey(this.Handle, HOTKEY_ID_GRAVACAO);
-
-
+            if (currentHotkeyGravacao != Keys.None)            
                 RegistrarAtalho(currentHotkeyGravacao, HOTKEY_ID_GRAVACAO);
-            }
 
 
-            if (currentHotkeyCaptura != Keys.None)
-            {
-                UnregisterHotKey(this.Handle, HOTKEY_ID);
-
-
+            if (currentHotkeyCaptura != Keys.None)            
                 RegistrarAtalho(currentHotkeyCaptura, HOTKEY_ID);
-            }
+            
 
             if (_configuracoesSistema == null)
                 _configuracoesSistema = ConfiguracoesSistema.ObterConfiguracoesDoSistema();
@@ -315,6 +312,9 @@ namespace Captura.GifScreen.App
 
         private void RegistrarAtalho(Keys keyData, int hotkeyId)
         {
+
+            UnregisterHotKey(this.Handle, hotkeyId);
+
             // Extrai tecla e modificadores
             uint modifiers = 0;
             Keys keyCode = keyData & Keys.KeyCode;
@@ -345,7 +345,14 @@ namespace Captura.GifScreen.App
             {
                 try
                 {
-                    System.Diagnostics.Process.Start(ObterPastaCapturas());
+
+
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = ObterPastaCapturas(),
+                        UseShellExecute = true
+                    };
+                    Process.Start(psi);
                 }
                 catch (Exception ex) { }
             }

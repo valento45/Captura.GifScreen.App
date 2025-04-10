@@ -18,6 +18,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Resources\icon.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\icon GifScreen.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
