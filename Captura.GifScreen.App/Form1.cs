@@ -180,7 +180,7 @@ namespace Captura.GifScreen.App
             _gravando = false;
 
             captureThread?.Join();
-            notifyIcon1.ShowBalloonTip(2000, "Gravação", $"Gravação concluída. Criando GIF...", ToolTipIcon.Info);
+            notifyIcon1.ShowBalloonTip(2000, "Quase lá!", $"Criando seu GIF...", ToolTipIcon.Info);
 
 
             CreateGif();
@@ -192,13 +192,13 @@ namespace Captura.GifScreen.App
             Rectangle screenBounds = Screen.PrimaryScreen.Bounds;
 
             string frame = $"frame_{Guid.NewGuid()}.png";
-             
+
             var directoryPath = Path.Combine(ObterPastaCapturas(), "temp");
 
-            if(!Directory.Exists(directoryPath)) 
+            if (!Directory.Exists(directoryPath))
                 Directory.CreateDirectory(directoryPath);
 
-            string framePath = Path.Combine(directoryPath, $"frame_{Guid.NewGuid()}.png") ;
+            string framePath = Path.Combine(directoryPath, $"frame_{Guid.NewGuid()}.png");
 
             //using (Bitmap bitmap = new Bitmap(800, 600))
             using (Bitmap bitmap = new Bitmap(screenBounds.Width, screenBounds.Height))
@@ -229,12 +229,19 @@ namespace Captura.GifScreen.App
                 {
                     foreach (var framePath in capturedFrames)
                     {
-                        var img = new MagickImage(framePath);
-                        img.AnimationDelay = 10; // Tempo de exibição do frame
-                        collection.Add(img);
+                        using (var img = new MagickImage(framePath))
+                        {
+                            img.AnimationDelay = 12; // Tempo de exibição do frame
+                            img.Quantize(new QuantizeSettings { Colors = 64 }); //Reduz brilho por performance
+                            collection.Add(img.Clone());
+                        }
                     }
 
-                    collection.Optimize();
+
+
+
+                    //collection.Optimize();
+                    //collection.OptimizeTransparency();
 
                     var caminhoCompleto = Path.Combine(ObterPastaCapturas(), string.Format(outputGifPath, DateTime.Now.ToString("ddMMyyyy HHmmss")));
 
@@ -242,7 +249,7 @@ namespace Captura.GifScreen.App
                     collection.Write(caminhoCompleto);
 
 
-                    notifyIcon1.ShowBalloonTip(2000, "Gravação", $"GIF salvo em: {ObterPastaCapturas()}", ToolTipIcon.Info);
+                    notifyIcon1.ShowBalloonTip(2000, "Pronto!", $"GIF salvo em: {ObterPastaCapturas()}", ToolTipIcon.Info);
                 }
 
                 // Remover os frames temporários
